@@ -32,7 +32,7 @@ sub Populate
 
     $this->ConfigSpecs
        (
-        '-tabfont' => ['METHOD', 'tabfont', 'TabFont', '-adobe-times-medium-r-normal--16-*-*-*-*-*-*-*'],
+        '-TabFont' => ['METHOD', 'tabfont', 'TabFont', '-adobe-times-medium-r-normal--16-*-*-*-*-*-*-*'],
        );
 
     $l_TabWidget->pack

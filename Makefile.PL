@@ -8,7 +8,7 @@ sub MY::postamble
     "\t".'$(CHMOD) 777 $(INST_LIBDIR)\/Tk'."\n".
     "\t".'@$(MKPATH) $(INST_LIBDIR)\/Tk'."\n".
     "\t".'$(PERL) -MExtUtils::Command -e cp $(TO_INST_PM) $(INST_LIBDIR)\/Tk'."\n".
-    "\t".'cp $(TO_INST_PM) blib/lib/Tk'."\n".
+    "\t".'$(PERL) -MExtUtils::Command -e cp $(TO_INST_PM) blib/lib/Tk'."\n".
     "\n";
    }
 
@@ -18,12 +18,12 @@ WriteMakefile
        {
         'Tk::TiedListbox' => '0',
         'Tk::Pane' => '0',
-        'Tk' => '402.002',
+        'Tk' => '800.005',
        },
 
     PMLIBDIRS => ['Tk'],
     DISTNAME => 'Tk-DKW',
-    VERSION => '0.01',
+    VERSION => '0.02',
     NAME => 'Tk',
 
     'dist' =>

@@ -20,7 +20,7 @@ my $l_SplitFrame = $l_MainWindow->SplitFrame
     '-padbefore' => 22,
     '-padafter' => 62,
     '-orientation' => 'vertical',
-    '-sliderposition' => 120
+    '-sliderposition' => 120,
    );
 
 $l_SplitFrame->Label

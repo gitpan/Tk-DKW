@@ -5,26 +5,32 @@ use Tk;
 use Tk::Scrollbar;
 use Tk::Frame;
 
-use vars qw ($VERSION @ISA $SERIAL_NUMBER $DEFAULT_PIXMAP @COPYLIST $DRAGDROP);
+use vars qw ($VERSION @ISA $SERIAL_NUMBER @COPYLIST $DRAGDROP $ICON_DEFAULTS);
 
 use strict;
 
-$VERSION = '1.01';
+@ISA = qw (Tk::Derived Tk::Frame Tk::Widget);
 
 $SERIAL_NUMBER = 0;
+
+$VERSION = '1.01';
 
 @COPYLIST = ();
 
 $DRAGDROP = 0;
 
-@ISA = qw (Tk::Derived Tk::Frame Tk::Widget);
+$ICON_DEFAULTS =
+   {
+    '-font' => '-adobe-times-medium-r-normal--17-*-*-*-*-*-*-*',
+    '-title' => '(Untitled)',
+    '-pixmap' => undef,
+    '-attach' => undef,
+    '-menu' => undef,
+    '-x' => 50,
+    '-y' => 50,
+   };
 
 Tk::Widget->Construct ('IconCanvas');
-
-*selected = \&IsItemSelected;
-*detach = \&LineDetach;
-*attach = \&LineAttach;
-*move = \&ItemMove;
 
 sub Populate
    {
@@ -90,6 +96,14 @@ sub Populate
     $l_Canvas->Tk::bind ('<ButtonPress-3>' => sub {$this->MenuEvent (@_);});
     $l_Canvas->Tk::bind ('<Any-Enter>' => sub {$this->DropEvent (@_);});
 
+    unless (defined ($ICON_DEFAULTS->{'-pixmap'}))
+       {
+        if (defined ($ICON_DEFAULTS->{'-pixmap'} = $this->GetPixmap ('folder')))
+           {
+            $ICON_DEFAULTS->{'-pixmap'}->{'m_PixmapSource'} = 'folder';
+           }
+       }
+
     $this->GeometryRequest (300, 200);
     $this->configure ('-opaque' => 0);
     return $this;
@@ -97,57 +111,32 @@ sub Populate
 
 sub Icon
    {
-    my ($this, @p_Parameters) = (shift, @_);
+    my ($this, %p_Parameters) = @_;
 
-    my $l_Font; # = '-adobe-times-medium-r-normal--17-*-*-*-*-*-*-*';
     my $l_ID = 'Icon_'.++$SERIAL_NUMBER;
     my $l_Canvas = $this->{m_Canvas};
-    my $l_Title = '(Untitled)';
-    my $l_Attach = undef;
-    my $l_Menu = undef;
     my $l_Pixmap;
-    my $l_X = 50;
-    my $l_Y = 50;
+    my $l_Name;
 
-    $Tk::IconCanvas::DEFAULT_PIXMAP = $this->GetPixmap ("folder") unless defined
-       (
-        $Tk::IconCanvas::DEFAULT_PIXMAP
-       );
-
-    for (my $l_Index = 0; $l_Index <= $#p_Parameters; $l_Index += 2)
+    foreach my $l_Key (keys %{$ICON_DEFAULTS})
        {
-        my ($l_Key, $l_Value) = (@p_Parameters [$l_Index..($l_Index + 1)]);
-
-        if ($l_Key eq '-x')
-           {
-            $l_X = $l_Value;
-           }
-        elsif ($l_Key eq '-y')
-           {
-            $l_Y = $l_Value;
-           }
-        elsif ($l_Key eq '-title')
-           {
-            $l_Title = $l_Value;
-           }
-        elsif ($l_Key eq '-font')
-           {
-            $l_Font = $l_Value;
-           }
-        elsif ($l_Key eq '-menu')
-           {
-            $l_Menu = $l_Value;
-           }
-        elsif ($l_Key eq '-attach')
-           {
-            $l_Attach = $l_Value;
-           }
-        elsif ($l_Key eq '-pixmap')
-           {
-            $l_Pixmap = (ref ($l_Value) eq 'Tk::Pixmap' ? $l_Value : ($this->GetPixmap ($l_Value) || $DEFAULT_PIXMAP));
-            $l_Pixmap->{'m_PixmapSource'} = $l_Value if (defined ($l_Pixmap));
-           }
+        $p_Parameters {$l_Key} = $ICON_DEFAULTS->{$l_Key} unless (defined ($p_Parameters {$l_Key}));
        }
+
+    if (ref ($l_Pixmap = $p_Parameters {'-pixmap'}) ne 'Tk::Pixmap')
+       {
+        $l_Pixmap = $p_Parameters {'-pixmap'} = $this->GetPixmap ($l_Name = $p_Parameters {'-pixmap'});
+        $l_Pixmap->{'m_PixmapSource'} = $l_Name if (defined ($l_Pixmap));
+       }
+
+    if (ref ($p_Parameters {'-pixmap'}) ne 'Tk::Pixmap')
+       {
+        $l_Pixmap = $p_Parameters {'-pixmap'} = $ICON_DEFAULTS->{'-pixmap'};
+       }
+
+    my $l_Menu = $p_Parameters {'-menu'};
+    my $l_X = $p_Parameters {'-x'};
+    my $l_Y = $p_Parameters {'-y'};
 
     my $l_PictureItem = $l_Canvas->create
        (
@@ -163,8 +152,8 @@ sub Icon
         $l_X,
         $l_Y,
         '-fill' => $this->cget ('-normalcolor'),
-        '-text' => $l_Title,
-        (defined ($l_Font) ? ('-font' => $l_Font) : ()),
+        '-text' => $p_Parameters {'-title'},
+        '-font' => $p_Parameters {'-font'},
        );
 
     $l_Canvas->move
@@ -183,14 +172,19 @@ sub Icon
     $l_Canvas->raise  ($l_ID, 'all');
 
     $l_Canvas->bind ($l_ID, '<Shift-ButtonPress-1>' => sub {$this->SelectionEvent ($l_ID, @_, 'shifted');});
-    $l_Canvas->bind ($l_ID, '<ButtonPress-3>' => sub {$this->MenuEvent ($l_Canvas, $l_ID, $l_Menu, @_);});
-    $l_Canvas->bind ($l_ID, '<ButtonPress-2>' => sub {$this->MenuEvent ($l_Canvas, $l_ID, $l_Menu, @_);});
+
+    if (defined ($l_Menu))
+       {
+        $l_Canvas->bind ($l_ID, '<ButtonPress-3>' => sub {$this->MenuEvent ($l_Canvas, $l_ID, $l_Menu, @_);});
+        $l_Canvas->bind ($l_ID, '<ButtonPress-2>' => sub {$this->MenuEvent ($l_Canvas, $l_ID, $l_Menu, @_);});
+       }
+
     $l_Canvas->bind ($l_ID, '<Double-ButtonPress-1>' => sub {$this->LaunchEvent ($l_ID, @_);});
     $l_Canvas->bind ($l_ID, '<ButtonRelease-1>' => sub {$this->ReleaseEvent ($l_ID, @_);});
     $l_Canvas->bind ($l_ID, '<ButtonPress-1>' => sub {$this->SelectionEvent ($l_ID, @_);});
     $l_Canvas->bind ($l_ID, '<B1-Motion>' => sub {$this->DragEvent ($l_ID, @_);});
 
-    $this->LineAttach ($l_ID, $l_Attach) if (defined ($l_Attach));
+    $this->LineAttach ($l_ID, $p_Parameters {'-attach'}) if (defined ($p_Parameters {'-attach'}));
     $this->ArrangeItems() if ($this->cget ('-autoadjust'));
     $this->ItemMove ($l_ID, 0, 0);
     return ($l_ID);
@@ -596,7 +590,9 @@ sub LineAttach
 
     ($p_From, $p_To) = @{$p_From} if (ref ($p_From) eq 'ARRAY');
 
-    return if (! defined ($p_From) || defined ($this->FindAttachmentByAttachment ($p_From, $p_To)));
+    return unless (defined ($p_From) && defined ($p_To));
+
+    return if (defined ($this->FindAttachmentByAttachment ($p_From, $p_To)));
 
     my $l_Canvas = $this->{m_Canvas};
     my @l_FromBox = $l_Canvas->bbox ($this->GetIconComponent ('image', $p_From));
@@ -610,7 +606,20 @@ sub LineAttach
         -width => '2.0',
        );
 
-    ${$this->{m_Attachments}}{$l_ID} = [$p_From, $p_To];
+    $this->{m_Attachments}->{$l_ID} = [$p_From, $p_To];
+
+    #---------------------------------------------------------------
+    # Something strange happens here sometimes. It may be something
+    # to do with the cut/paste mechanism, I don't really know. It
+    # manifests itself as a "phantom" attachment selection. The
+    # attachment selection includes an "invisible" object above the
+    # upper left corner of the canvas.
+    #---------------------------------------------------------------
+    # foreach my $l_Key (keys %{$this->{m_Attachments}})
+    #   {
+    #    printf ("Attached [%s] to [%s]\n", $l_Key, @{$this->{m_Attachments}->{$l_Key}});
+    #   }
+
     $this->LineAdjust ($p_From, $p_To);
     return $l_ID;
    }
@@ -639,13 +648,9 @@ sub LineAdjust
 
     foreach my $l_ID ($this->FindAttachmentByAttachment ($p_From, $p_To))
        {
-        my ($l_From, $l_To) =
-           (
-            ref ($l_Hash {$l_ID}) eq 'ARRAY' ?
-            @{$l_Hash {$l_ID}} :
-            ()
-           );
+        next unless (ref ($l_Hash {$l_ID}) eq 'ARRAY' && $#{$l_Hash {$l_ID}} > 0);
 
+        my ($l_From, $l_To) = @{$l_Hash {$l_ID}};
         my @l_FromBox = $l_Canvas->bbox ($this->GetIconComponent ('image', $l_From));
         my @l_ToBox = $l_Canvas->bbox ($this->GetIconComponent ('image', $l_To));
 
@@ -734,7 +739,33 @@ sub items
     return (keys %l_Hash);
    }
 
+#=========================================================================================
+#                                         Alias Methods
+#=========================================================================================
+sub detach
+   {
+    return LineDetach (@_);
+   }
+
+sub attach
+   {
+    return LineAttach (@_);
+   }
+
+sub move
+   {
+    return ItemMove (@_);
+   }
+
+sub selected
+   {
+    return IsItemSelected (@_);
+   }
+
 1;
+#=========================================================================================
+#                                          END OF MODULE
+#=========================================================================================
 
 __END__
 

@@ -16,10 +16,6 @@ $VERSION = '1.01';
 
 Tk::Widget->Construct ('TabFrame');
 
-*current = \&TabCurrent;
-*raised = \&TabCurrent;
-*font = \&Font;
-
 sub Populate
    {
     my $this = shift;
@@ -183,11 +179,12 @@ sub TabRaise
 
     foreach my $l_Client (@{$this->{m_ClientList}})
        {
-        $l_ButtonFrame->Subwidget ('Button_'.$l_Client)->place
-           (
-            '-height' => - 5,
-            '-y' => 5
-           );
+        if ($l_Client ne $p_Widget)
+           {
+            my $l_TabButton = $l_ButtonFrame->Subwidget ('Button_'.$l_Client);
+            $l_TabButton->place ('-height' => - 5, '-y' => 5);
+            $l_TabButton->lower ($l_TabFrame);
+           }
        }
 
     $l_MagicFrame->place
@@ -202,8 +199,15 @@ sub TabRaise
     $l_MagicFrame->configure ('-bg' => $l_TabFrame->cget ('-background'));
     $l_TabFrame->place ('-height' => - 1, '-y' => 1);
     $l_TabFrame->Subwidget ('Button')->focus();
-    $l_MagicFrame->raise();
+    $l_TabFrame->Subwidget ('Button')->raise();
+    $l_MagicFrame->raise ();
     $l_TabFrame->raise();
+
+    foreach my $l_Sibling ($p_Widget->parent()->children())
+       {
+        $l_Sibling->lower ($p_Widget) if ($l_Sibling ne $p_Widget);
+       }
+
     $p_Widget->raise();
     return $p_Widget;
    }
@@ -361,6 +365,21 @@ sub Font
     return ($this->{m_Font} = $p_Font);
    }
 
+sub current
+   {
+    shift->TabCurrent (@_);
+   }
+
+sub raised
+   {
+    shift->TabCurrent (@_);
+   }
+
+sub font
+   {
+    shift->Font (@_);
+   }
+
 1;
 
 package Tk::TabChildFrame;
@@ -412,7 +431,7 @@ sub ExecuteLayout
     my $l_PadY = $this->parent()->cget ('-pady');
     my $l_Height = 0;
     my $l_Width = 0;
-    
+
     foreach my $l_Child ($this->children())
        {
         next unless Exists ($l_Child);
@@ -524,6 +543,9 @@ Damion K. Wilson, dkw@rcm.bm
 
 =head1 HISTORY 
 
-Created January 28, 1998
+January 28, 1998 : Created
+
+February 2, 1999 : raise/lower semantics changed somehow in Tk800.012. Added
+                   explicit lower calls for frame and button reordering.
 
 =cut

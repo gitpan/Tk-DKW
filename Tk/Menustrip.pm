@@ -5,19 +5,21 @@ use Tk::Label;
 use Tk::Button;
 use Tk::Toplevel;
 
-use vars qw ($VERSION @ISA);
+use Carp;
 
 use strict;
 
-$VERSION = '0.01';
-
-@ISA = qw (Tk::Frame);
+use base qw (Tk::Frame);
 
 Tk::Widget->Construct ('Menustrip');
 
 sub Populate
    {
-    my $this = shift;
+    my ($this, %p_Options) = (shift, @_);
+
+    my $l_DefaultFont = delete $p_Options {'-font'} || '-*-Times-Medium-R-Normal--*-140-*-*-*-*-*-*';
+
+printf ("Font = [%s]\n", $l_DefaultFont);
 
     my $l_SubRef = sub
        {
@@ -26,7 +28,6 @@ sub Populate
        };
 
     $this->SUPER::Populate (@_);
-
     $this->toplevel()->bind ('<ButtonPress>' => $l_SubRef);
     $this->bind ('<ButtonPress-1>' => $l_SubRef);
 
@@ -34,16 +35,13 @@ sub Populate
        (
         '-background' => [['SELF', 'CHILDREN', 'DESCENDANTS'], 'background', 'Background', $this->parent()->cget ('-background')],
         '-foreground' => [['SELF', 'PASSIVE', 'CHILDREN', 'DESCENDANTS'], 'foreground', 'Foreground', 'black'],
-        '-font' => ['PASSIVE', 'font', 'Font', '-*-Times-Medium-R-Normal--*-180-*-*-*-*-*-*'],
         '-borderwidth' => ['SELF', 'borderwidth', 'BorderWidth', 1],
         '-automenu' => ['METHOD', 'automenu', 'AutoMenu', 'false'],
+        '-font' => ['PASSIVE', 'font', 'Font', $l_DefaultFont],
         '-relief' => ['SELF', 'relief', 'Relief', 'raised'],
        );
 
-    $this->configure
-       (
-        '-font' => '-*-Times-Medium-R-Normal--*-180-*-*-*-*-*-*',
-       );
+    $this->configure ('-font' => $l_DefaultFont);
 
     return $this;
    }
@@ -174,8 +172,8 @@ sub MenuLabel
            }
        );
 
-    push (@{$this->{mMenuList}}, $l_Label);
-
+    push (@{$this->{m_MenuList}}, $l_Label);
+    $l_Popup->overrideredirect (1);
     $this->Hide ($l_Label);
    }
 
@@ -271,7 +269,7 @@ sub MenuEntry
             my $l_Next = $this->toplevel()->focusCurrent();
             my $l_Found = 0;
 
-            foreach my $l_Widget (@{$this->{mMenuList}})
+            foreach my $l_Widget (@{$this->{m_MenuList}})
                {
                 $l_Found = 1 if ($l_Next eq $l_Widget);
                }
@@ -291,7 +289,7 @@ sub MenuEntry
             my $l_Next = $this->toplevel()->focusCurrent();
             my $l_Found = 0;
 
-            foreach my $l_Widget (@{$this->{mMenuList}})
+            foreach my $l_Widget (@{$this->{m_MenuList}})
                {
                 $l_Found = 1 if ($l_Next eq $l_Widget);
                }
@@ -372,7 +370,7 @@ sub Show
 
     my $l_CodeRef = sub
        {
-        $l_Popup->Tk::raise();
+        $l_Popup->raise(); # Tk::
         $l_Popup->MapWindow();
 
         $l_Popup->geometry
@@ -418,12 +416,11 @@ sub Hide
 
         &{$l_Popup->{'m_FocusRestore'}} if (ref ($l_Popup->{'m_FocusRestore'}) eq 'CODE');
         delete $l_Popup->{'m_FocusRestore'};
-        $l_Popup->overrideredirect (1);
         $l_Popup->withdraw();
        }
     else
        {
-        foreach my $l_Label (@{$this->{mMenuList}})
+        foreach my $l_Label (@{$this->{m_MenuList}})
            {
             $this->Hide ($l_Label);
            }

@@ -74,7 +74,7 @@ sub Populate
         '-trimcolor'   => [['SELF', 'PASSIVE'], 'trimcolor','trimcolor', $l_BaseColor],
         '-background'  => ['SELF','background', 'Background', $l_BaseColor],
         '-borderwidth' => ['METHOD', 'borderwidth', 'BorderWidth', 2],
-        '-sliderposition' => ['PASSIVE', 'sliderposition', 'SliderPosition', 60],
+        '-sliderposition' => ['METHOD', 'sliderposition', 'SliderPosition', 60],
         '-sliderwidth' => [['SELF', 'PASSIVE'], 'SliderWidth', 'SliderWidth', 7],
         '-relief'      => [['SELF', 'PASSIVE'], 'relief', 'Relief', 'flat'],
         '-height'      => [['SELF', 'PASSIVE'], 'height', 'Height', 100],
@@ -309,9 +309,9 @@ sub RedrawTrim
     if (Exists (my $l_Slider = $this->Subwidget ('Slider')))
        {
         my $l_Horizontal = $this->cget ('-orientation') eq 'vertical' ? 0 : 1;
-        my $l_Count = $this->cget ('-trimcount') || 3;
+        my $l_Count = $this->cget ('-trimcount');
 
-        for (my $l_Index = 0; $l_Index < $l_Count; ++$l_Index)
+        for (my $l_Index = 0; $l_Index < $l_Count && $l_Count >= 0; ++$l_Index)
            {
             my $l_Widget;
 
@@ -352,6 +352,19 @@ sub borderwidth
     my ($this, $p_BorderWidth) = (shift, @_);
     $this->{m_BorderWidth} = $p_BorderWidth if (defined ($p_BorderWidth));
     return $this->{m_BorderWidth};
+   }
+
+sub sliderposition
+   {
+    my ($this, $p_SliderPosition) = (shift, @_);
+
+    if (defined ($p_SliderPosition))
+       {
+        $this->{m_SliderPosition} = $p_SliderPosition;
+        $this->Redraw() if ($this->ismapped());
+       }
+
+    return $this->{m_SliderPosition};
    }
 
 sub ChildNotification
@@ -406,6 +419,8 @@ Tk::SplitFrame - a geometry manager for scaling two subwidgets
     my $RightLabel = $SplitFrame->Label ('-text' => 'Right');
 
     $SplitFrame->pack (-expand => true, -fill => both);
+
+    $SplitFrame->configure ('-sliderposition' => 22);
 
     Tk::MainLoop;
 
